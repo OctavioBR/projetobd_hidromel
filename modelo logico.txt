@@ -1,0 +1,162 @@
+insumo(
+integer id (PK)
+char(2) unidade_medicao CHECK IN (cm, mm, l, ml, kg, g....)
+varchar(100) descricao
+)
+
+investidor(                // mais atributos ?
+integer id (PK)
+varchar(45) nome
+varchar(70) empresa
+)
+
+socio(
+integer id (FK - investidor)          // mais atributos necessários
+
+)
+
+investimento(
+integer id (PK)
+real valor
+date dia_do_investimento
+integer investidor (FK - investidor)
+)
+
+compra(                           // ligar compra à investimento?
+integer id (PK)
+integer id_insumo (FK - insumo)
+integer quantidade
+varchar(70) fornecedor            // fornecedor merece ser entidade?
+varchar(35) marca
+real valor_total
+date dia_da_compra
+)
+
+receita(
+integer id (PK)
+real graduacao_esperada
+bool reidratacao_fermento
+real ph_agua_desejado
+integer id_autor (FK - investidor)      // só investidores podem sugerir receitas??
+)
+
+insumo_receita(
+integer quantidade_insumo
+integer id_insumo (FK - insumo)
+integer id_receita (FK - receita)
+PK (id_insumo, id_receita)
+)
+
+local(
+integer id (PK)
+varchar(100) endereco
+integer dono (FK - socio)
+)
+
+medicao(
+integer id (PK)
+integer temperatura
+real ph
+real densidade
+date dia_realizada
+)
+
+sanitizacao(
+integer id (PK)
+)
+
+inoculacao(
+integer id
+integer id_receita (FK - receita)
+integer local_de_realizacao (FK - local)
+integer medicao                                  // obrigatorio? se sim deve fazer parte da PK
+date dia_inoculacao
+char(6) tipo CHECK IN (aberta, selada)
+PK (id, id_receita, local_de_realizacao)
+)
+
+responsavel_inoculacao(
+integer id_socio (FK - socio)
+integer id_inoculacao
+integer id_receita
+integer local_de_realizacao
+PK(id_socio, id_inoculacao, id_receita, local_de_realizacao)
+FK(id_inoculacao, id_receita, local_de_realizacao - inoculacao)
+)
+
+// existe ferramentas_inoculacao ou entendi errado e as ferramentas são da sanitização? ou existe os dois, de qualquer modo achei meio ambíguo
+
+ferramentas_inoculacao(
+integer id_ferramenta (FK - insumo)              // fk ferramenta se houver herança
+integer id_inoculacao
+integer id_receita
+integer local_de_realizacao
+PK(id_socio, id_inoculacao, id_receita, local_de_realizacao)
+FK(id_ferramenta, id_receita, local_de_realizacao - inoculacao)
+)
+
+// ligar inoculação à fermentacao?
+
+fermentacao(
+integer id (PK)
+date dia_finalizada
+)
+
+// verificar na transferencia se "de" == "para" da anterior??
+
+transferencia_recipiente_fermentacao(
+integer id
+integer id_fermentacao (FK - fermentacao)
+integer para (FK - id_recipiente)                   // trocar se houver herança para recipiente
+date dia_realizada
+bool com_filtragem                           // filtragem merece ser entidade?
+PK(id, id_fermentacao, id_recipiente)
+)
+
+medicao_fermentacao(
+integer id_medicao (FK - medicao)
+integer id_fermentacao (FK - fermentacao)
+date data_realizada
+)
+
+lote(
+integer id
+integer id_fermentacao (FK - fermentacao)
+real volume_produzido
+varchar(9) destino CHECK IN (marketing, vendas, P&D)   // necessário herança?
+PK(id, id_fermentacao)
+)
+
+garrafa(
+integer id (PK)
+integer volume
+varchar(8) material CHECK IN (vidro, plástico)
+varchar(8) tampa CHECK IN (metal, rolha, plástico)
+bool primming                                         // possui atributos a serem detalhados?
+bool sanitizacao      // possui atributos a serem detalhados? (ver sanitização no processo de inoculação)
+)
+
+lote_engarrafado(
+integer id (FK - lote)
+integer id_fermentacao (FK - lote)
+integer tempo_maturacao
+integer id_engarrafamento (FK - engarrafamento)
+integer id_garrafa (FK - garrafa)                    // necessário criar engarrafamento?
+PK(id, id_fermentacao - lote)
+)
+
+estoque(
+integer id_lote (FK - lote_engarrafado)
+integer volume_disponivel
+)
+
+venda(
+integer id_lote (FK - lote_engarrafado)
+integer valor_total
+)
+
+// Como fazer 1 ou mais medições na fermentação, possibilitando a medicao também na inoculação?
+// todo o lote será utilizado para uma mesma finalidade? se sim, colocar finalidade no lote? se não, colocar finalidade no engarrafamento? colocar finalidade na saida?
+// engarrafamento depende da finalidade? todo volume do lote para uma finalidade será engarrafado igualmente?
+// verificar integers/reais
+// acho que o controle do estoque é desnecessário do jeito que está, basta saber o quanto foi vendido registrando na tabela de vendas e linkando com o lote do qual as garrafas foram utilizadas na venda
